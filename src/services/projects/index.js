@@ -5,6 +5,8 @@ const path = require("path");
 const uniqid = require("uniqid");
 const { check, validationResult } = require("express-validator");
 const { S_IFDIR } = require("constants");
+const { response } = require("express");
+const { ok } = require("assert");
 
 const projectsFilePath = path.join(__dirname, "projects.json");
 const fileAsString = fs.readFileSync(projectsFilePath).toString();
@@ -76,19 +78,29 @@ router.post(
     .withMessage("Insert your student ID to keep all your projects together!")
   ],
   (req, res, next) => {
+   
     try {
     const errors = validationResult(req)
-      const project = readFile("projects.json");
+      
       const buffer = fs.readFileSync(
-        path.join(__dirname, "../students", "/students.json")
+        path.join(__dirname, "../students/students.json")
       );
       const students = JSON.parse(buffer.toString());
-      const exists = students.filter(
+  
+      const exists = students.find(
         student => student.id === req.body.studentId
       );
+     
+console.log('here')
+      if (exists  && errors.isEmpty()) { //length is not the correct, as find only returns one. can do filter for an array length, or some for true or false, or every
 
-      if (exists.length > 0  && errors.isEmpty()) { //length is not the correct, as find only returns one. can do filter for an array length, or some for true or false, or every
+students.forEach(student=>{
+  if(student.id===exists.id){
 
+    exists.numberOfObjects= exists.numberOfObjects? exists.numberOfObjects+1:1
+  }
+})
+fs.writeFileSync( path.join(__dirname, "../students/students.json"), JSON.stringify(students))
         const newProject = {
             ...req.body,
             createdAt: new Date(),
@@ -96,17 +108,19 @@ router.post(
          
          };
  
-         project.push(newProject) && exists.push(newProject);
-         fs.writeFileSync(projectsFilePath, JSON.stringify(projectsArray));
+         projectsArray.push(newProject) ;
+         fs.writeFileSync(projectsFilePath,JSON.stringify(projectsArray));
          res.status(201).send(newProject);
        } else {
-        const err = new Error();
+         console.log('here')
+        const err = new Error('student not found');
         err.httpStatusCode = 500;
-        next(err);
+        
+        next({... err, message:'Student not found'});
       }
     } catch (error) {
-      next(error);
       console.log(error);
+      next(error);
     }
     
   }
