@@ -56,7 +56,8 @@ router.post(
       .isLength({ min: 2 })
       .withMessage("Name must be longer than 2 letters")
       .exists()
-      .withMessage("Insert a name please!"),
+      .withMessage("Insert a name please!")
+      ,
     check("description")
       .isLength({ min: 100 })
       .withMessage("Description must be longer than 100 characters")
@@ -64,29 +65,29 @@ router.post(
       .withMessage("Insert a description please!"),
    
     check('repoURL').exists()
-    .withMessage("Link to your GitHUb repo"),
+    .isURL()
+    .withMessage("Link to your GitHUb repo")
     ,
     check('liveURL').exists()
-    .withMessage("Is your site up & running? Let us check it out with a link"),
+    .isURL()
+    .withMessage("Is your site up & running? Let us check it out with a link")
     ,
     check('studentId').exists()      
-    .withMessage("Insert your student ID to keep all your projects together!"),
-
-
+    .withMessage("Insert your student ID to keep all your projects together!")
   ],
   (req, res, next) => {
     try {
     const errors = validationResult(req)
       const project = readFile("projects.json");
       const buffer = fs.readFileSync(
-        path.join(__dirname, "../students/", "students.json")
+        path.join(__dirname, "../students", "/students.json")
       );
       const students = JSON.parse(buffer.toString());
-      const exists = students.find(
+      const exists = students.filter(
         student => student.id === req.body.studentId
       );
 
-      if (exists.length > 0  && errors.isEmpty()) {
+      if (exists.length > 0  && errors.isEmpty()) { //length is not the correct, as find only returns one. can do filter for an array length, or some for true or false, or every
 
         const newProject = {
             ...req.body,
@@ -95,12 +96,12 @@ router.post(
          
          };
  
-         project.push(newProject);
+         project.push(newProject) && exists.push(newProject);
          fs.writeFileSync(projectsFilePath, JSON.stringify(projectsArray));
          res.status(201).send(newProject);
        } else {
         const err = new Error();
-        err.httpStatusCode = 404;
+        err.httpStatusCode = 500;
         next(err);
       }
     } catch (error) {
